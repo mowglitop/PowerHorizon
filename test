@@ -1,2 +1,0 @@
- Tout fonctionne sauf sur l'onglet "pool",nous avons l'erreur 'The property 'SortDescendingSpecified' cannot be found on this object. Verify that the property exists and can be set."
-Je pense que c'est liée a la fonction d'historique car je n'ai pas la derniere connexion au pool,donc non plus son utilisateurs associé et le hostname de sa machine cliente, source de la date aussi et le debut de la session m'importe peu.
