@@ -34,7 +34,7 @@ Cette version couvre la connexion, l’inventaire et la collecte ZIP par hostnam
 
 ## Collecte de diagnostics
 
-Déplier **Collecte de diagnostics par hostname**, saisir un hostname/FQDN (ou sélectionner une ligne de l’inventaire), choisir les catégories et cliquer sur **Collecter en ZIP**. Le chemin de l’archive est affiché et copiable ; les archives sont enregistrées dans `Exports/`.
+Ouvrir l'onglet **Diagnostics**, saisir un hostname/FQDN (ou sélectionner une ligne de l’inventaire), choisir les catégories et cliquer sur **Collecter en ZIP**. Le chemin de l’archive est affiché et copiable ; les archives sont enregistrées dans `Exports/`.
 
 La collecte fonctionne indépendamment de Horizon : elle ne vérifie pas que la cible appartient à un pool. Elle utilise WinRM/Kerberos avec le compte Windows exécutant PowerHorizon, qui peut être différent du compte saisi pour Horizon. Le poste doit pouvoir joindre le domaine et le VDI, et le compte doit disposer des droits de remoting et de lecture des diagnostics. L’endpoint distant Windows PowerShell 5.1 suffit. Aucun ping préalable ne bloque une machine qui filtre ICMP. Aucun changement de WinRM, de pare-feu ou de TrustedHosts n’est effectué.
 
@@ -78,3 +78,30 @@ pwsh -NoProfile -STA -File .\Tests\Smoke.ps1
 ```
 
 Ces vérifications ne remplacent pas un essai contre le Connection Server : authentification, certificat, droits et résultats d’inventaire restent à valider sur l’environnement réel.
+
+## Navigation et gold images
+
+L’interface est organisée en quatre onglets : Connexion, VDI, Gold images et Diagnostics. La session Horizon et le résultat des opérations restent visibles. Après connexion, l’onglet VDI s’ouvre. Sélectionner un seul VDI puis **Diagnostiquer le VDI sélectionné** ouvre les diagnostics avec son hostname prérempli.
+
+Dans **Gold images**, cliquer sur **Charger tous les pools** pour lire les pools accessibles au compte sur le Connection Server connecté. Une ligne indique la VM parente ou le template, le snapshot configuré, et les images/snapshots en attente déclarés par Horizon. Les streams et tags Image Management sont également affichés lorsqu’ils sont renseignés. Les pools RDS sont résolus via leur ferme ; les pools manuels restent visibles sans image de provisioning. Les erreurs de lecture individuelles sont conservées dans le tableau.
+
+La collecte utilise uniquement Horizon et ne nécessite pas de connexion vCenter séparée. Ce relevé représente la configuration des pools, pas un audit des images effectivement utilisées par chaque VDI pendant une transition ni un inventaire de toutes les VM candidates à devenir des gold images. Il est limité au périmètre visible depuis cette connexion et ne parcourt pas automatiquement les autres pods. Les listes sont effacées à la déconnexion.
+
+Les tests Gold images utilisent les types réels du SDK 2506 avec des données synthétiques. La validation sur l’infrastructure reste nécessaire. Tests/RenderUI.ps1 génère des captures WPF hors écran dans Exports/UI pour vérifier la présentation sans serveur.
+
+## Pools et export complet des VDI
+
+L’onglet **Pools** recherche les noms par préfixe littéral, sans distinction de casse. Un préfixe vide inclut tous les pools visibles depuis la connexion courante.
+
+- **VDI présents** : machines actuellement déclarées dans le pool, tous états inclus (maintenance, erreur, etc.). Les serveurs RDS ne sont pas comptés comme des VDI ; un pool RDS peut donc afficher zéro.
+- **Dernière connexion retrouvée** : dernier événement AGENT_CONNECTED ou AGENT_RECONNECTED associé au pool, parmi les événements exposés par Horizon. La base d’événements doit être configurée et accessible au compte. La vue AuditEventSummaryView ne parcourt pas les tables historiques archivées. Aucune trace ne signifie pas « jamais utilisé ».
+- **Utilisateur** : compte AD résolu quand possible, sinon nom retourné par Horizon. Si les événements sont absents ou inaccessibles, la date de début de la session encore présente la plus récente sert de repli, explicitement signalé dans la colonne Source.
+- **Dernier client observable** : nom déclaré par la session encore présente ayant le début le plus récent, accompagné de cette date. Il peut différer du client de la dernière connexion historique. L’API d’audit utilisée ne fournit pas le hostname du client des sessions terminées ; ce nom peut être indisponible, et Horizon ne garantit pas que le client soit une machine physique plutôt qu’une autre VM.
+- **Gold image / snapshot** : configuration du pool ou de sa ferme RDS. Les erreurs individuelles restent visibles dans Détails / limites.
+
+Dans **VDI**, **Exporter tous les VDI (CSV)** interroge à nouveau tous les pools et toutes les machines accessibles. Les filtres de recherche et les lignes sélectionnées sont ignorés. Le CSV horodaté dans Exports contient pool, identifiant du pool, activation, hostname, DNS, état, mode d’affectation et utilisateurs affectés aux pools DEDICATED (y compris les affectations multiples). « Persistant » correspond ici à l’affectation dédiée Horizon ; les pools flottants ne sont pas présentés comme ayant un utilisateur permanent.
+
+Le CSV utilise le séparateur point-virgule et UTF-8 avec BOM pour Excel. Les chaînes susceptibles d’être interprétées comme des formules sont précédées d’une apostrophe. Un inventaire vide produit un fichier avec en-tête. Le périmètre est celui du compte et du pod connecté, sans parcours automatique de la fédération. Une erreur de lecture générale interrompt l’export.
+
+Référence : [API AuditEventSummaryView](https://developer.omnissa.com/horizon-apis/view/versions/2206/vdi.infrastructure.AuditEvent.AuditEventSummaryView/) (événements courants uniquement).
+

@@ -1,78 +1,58 @@
-<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="PowerHorizon" Width="1100" Height="740" MinWidth="900" MinHeight="620"
-        WindowStartupLocation="CenterScreen" Background="#F3F5F9" FontFamily="Segoe UI" FontSize="14">
-  <Window.Resources>
-    <Style TargetType="TextBox"><Setter Property="Padding" Value="8,5"/><Setter Property="Margin" Value="0,4,12,12"/></Style>
-    <Style TargetType="PasswordBox"><Setter Property="Padding" Value="8,5"/><Setter Property="Margin" Value="0,4,12,12"/></Style>
-    <Style TargetType="Button"><Setter Property="Padding" Value="16,7"/><Setter Property="Margin" Value="0,0,10,0"/></Style>
-  </Window.Resources>
-  <Grid Margin="24">
-    <Grid.RowDefinitions>
-      <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
-      <RowDefinition Height="*"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
-    </Grid.RowDefinitions>
-    <StackPanel Margin="0,0,0,20">
-      <TextBlock Text="PowerHorizon" FontSize="30" FontWeight="SemiBold" Foreground="#173454"/>
-      <TextBlock Text="Administration Horizon • Connexion et inventaire VDI" Foreground="#53657B"/>
-    </StackPanel>
-    <Border Grid.Row="1" Background="White" Padding="18" CornerRadius="8" Margin="0,0,0,16">
-      <StackPanel>
-        <ComboBox x:Name="Environment" DisplayMemberPath="Name" Margin="0,0,0,14" Padding="6"/>
-        <Grid x:Name="CredentialsPanel">
-          <Grid.ColumnDefinitions><ColumnDefinition Width="2*"/><ColumnDefinition/><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
-          <StackPanel><TextBlock Text="Connection Server (FQDN)"/><TextBox x:Name="Server"/></StackPanel>
-          <StackPanel Grid.Column="1"><TextBlock Text="Domaine AD"/><TextBox x:Name="Domain"/></StackPanel>
-          <StackPanel Grid.Column="2"><TextBlock Text="Utilisateur (sans domaine)"/><TextBox x:Name="Username"/></StackPanel>
-          <StackPanel Grid.Column="3"><TextBlock Text="Mot de passe"/><PasswordBox x:Name="Password"/></StackPanel>
-        </Grid>
-        <StackPanel Orientation="Horizontal">
-          <Button x:Name="Connect" Content="Se connecter" Background="#173454" Foreground="White"/>
-          <Button x:Name="Disconnect" Content="Se déconnecter" IsEnabled="False"/>
-          <TextBlock x:Name="Identity" Text="Non connecté" VerticalAlignment="Center"/>
-        </StackPanel>
-      </StackPanel>
-    </Border>
-    <StackPanel Grid.Row="2">
-      <TextBlock Text="Inventaire des VDI" FontSize="20" FontWeight="SemiBold"/>
-      <Grid Margin="0,8,0,0">
-        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-        <StackPanel><TextBlock Text="Hostname commence par (facultatif)"/><TextBox x:Name="MachineFilter" ToolTip="Exemple : VD57 retrouve VD57039 et VD57040. Aucun * nécessaire."/></StackPanel>
-        <StackPanel Grid.Column="1"><TextBlock Text="Pool exact (facultatif)"/><TextBox x:Name="PoolFilter"/></StackPanel>
-        <Button Grid.Column="2" x:Name="Search" Content="Rechercher" IsEnabled="False" VerticalAlignment="Center"/>
-      </Grid>
-    </StackPanel>
-    <DataGrid Grid.Row="3" x:Name="Machines" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False"
-              SelectionMode="Extended" Background="White" BorderBrush="#D9E0E9" GridLinesVisibility="Horizontal">
-      <DataGrid.Columns>
-        <DataGridTextColumn Header="Hostname" Binding="{Binding Hostname}" Width="*"/>
-        <DataGridTextColumn Header="DNS" Binding="{Binding DNS}" Width="1.5*"/>
-        <DataGridTextColumn Header="Pool" Binding="{Binding Pool}" Width="*"/>
-        <DataGridTextColumn Header="État" Binding="{Binding State}" Width="*"/>
-        <DataGridTextColumn Header="Utilisateur affecté" Binding="{Binding AssignedUser}" Width="1.3*"/>
-      </DataGrid.Columns>
-    </DataGrid>
-    <Expander Grid.Row="4" Header="Collecte de diagnostics par hostname" Margin="0,12,0,0">
-      <StackPanel Margin="8">
-        <TextBlock Text="WinRM • Compte Windows courant • Indépendant de la connexion Horizon" Foreground="#53657B"/>
-        <DockPanel Margin="0,6,0,0">
-          <Button x:Name="Collect" Content="Collecter en ZIP" DockPanel.Dock="Right" VerticalAlignment="Center"/>
-          <TextBox x:Name="DiagnosticHost" ToolTip="Hostname ou FQDN du VDI" MinWidth="180"/>
-        </DockPanel>
-        <WrapPanel x:Name="DiagnosticOptions">
-          <CheckBox x:Name="DiagSystem" Content="Système" IsChecked="True" Margin="0,0,16,8"/>
-          <CheckBox x:Name="DiagNetwork" Content="Réseau" IsChecked="True" Margin="0,0,16,8"/>
-          <CheckBox x:Name="DiagEvents" Content="Journaux Windows" IsChecked="True" Margin="0,0,16,8"/>
-          <CheckBox x:Name="DiagGroupPolicy" Content="GPO machine" Margin="0,0,16,8"/>
-          <CheckBox x:Name="DiagAgentLogs" Content="Logs agents (configurés)" Margin="0,0,16,8"/>
-        </WrapPanel>
-        <TextBox x:Name="DiagnosticResult" IsReadOnly="True" TextWrapping="Wrap" MaxHeight="80" VerticalScrollBarVisibility="Auto"
-                 Text="Archives enregistrées dans Exports. Sélectionne un VDI dans le tableau pour préremplir le hostname."/>
-      </StackPanel>
-    </Expander>
-    <StackPanel Grid.Row="5" Margin="0,12,0,0">
-      <ProgressBar x:Name="Progress" Height="3" IsIndeterminate="True" Visibility="Collapsed"/>
-      <TextBlock x:Name="Status" Text="Renseigne le serveur et ton compte AD pour commencer." TextWrapping="Wrap" Margin="0,8,0,0"/>
-    </StackPanel>
-  </Grid>
-</Window>
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="PowerHorizon" Width="1240" Height="820" MinWidth="1000" MinHeight="700" WindowStartupLocation="CenterScreen" Background="#F3F6FA" FontFamily="Segoe UI" FontSize="14" Foreground="#20334B">
+<Window.Resources>
+<Style TargetType="TextBox"><Setter Property="Padding" Value="10,8"/><Setter Property="Margin" Value="0,6,12,14"/><Setter Property="BorderBrush" Value="#C9D5E3"/></Style>
+<Style TargetType="PasswordBox"><Setter Property="Padding" Value="10,8"/><Setter Property="Margin" Value="0,6,12,14"/><Setter Property="BorderBrush" Value="#C9D5E3"/></Style>
+<Style TargetType="Button"><Setter Property="Padding" Value="18,9"/><Setter Property="Margin" Value="0,0,10,0"/><Setter Property="Cursor" Value="Hand"/><Setter Property="Background" Value="#E8EFF7"/><Setter Property="BorderBrush" Value="#C9D5E3"/><Style.Triggers><Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.45"/></Trigger></Style.Triggers></Style>
+<Style x:Key="Primary" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}"><Setter Property="Background" Value="#176B99"/><Setter Property="Foreground" Value="White"/><Setter Property="BorderThickness" Value="0"/></Style>
+<Style TargetType="TabItem"><Setter Property="Padding" Value="22,13"/><Setter Property="FontWeight" Value="SemiBold"/></Style>
+<Style TargetType="DataGrid"><Setter Property="AutoGenerateColumns" Value="False"/><Setter Property="IsReadOnly" Value="True"/><Setter Property="CanUserAddRows" Value="False"/><Setter Property="RowHeight" Value="38"/><Setter Property="ColumnHeaderHeight" Value="42"/><Setter Property="AlternatingRowBackground" Value="#F3F7FB"/><Setter Property="Background" Value="White"/><Setter Property="BorderBrush" Value="#DCE4EE"/><Setter Property="GridLinesVisibility" Value="None"/><Setter Property="HeadersVisibility" Value="Column"/><Setter Property="ClipboardCopyMode" Value="IncludeHeader"/></Style>
+<Style TargetType="DataGridColumnHeader"><Setter Property="Background" Value="#E8EFF7"/><Setter Property="Padding" Value="10,6"/><Setter Property="FontWeight" Value="SemiBold"/></Style>
+<Style TargetType="CheckBox"><Setter Property="Margin" Value="0,0,0,16"/></Style>
+</Window.Resources>
+<Grid><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+<Border Background="#132D48" Padding="28,20"><DockPanel>
+<StackPanel DockPanel.Dock="Right" VerticalAlignment="Center" MaxWidth="610"><TextBlock Text="SESSION HORIZON" Foreground="#9FBDD8" FontSize="11" HorizontalAlignment="Right"/><TextBlock x:Name="Identity" Text="Non connecté" Foreground="White" TextWrapping="Wrap" HorizontalAlignment="Right" Margin="0,5,0,0"/></StackPanel>
+<StackPanel><TextBlock Text="PowerHorizon" FontSize="27" FontWeight="SemiBold" Foreground="White"/><TextBlock Text="Votre espace de diagnostic VDI" Foreground="#B7CEE3" Margin="0,4,0,0"/></StackPanel>
+</DockPanel></Border>
+<TabControl x:Name="Workspace" Grid.Row="1" Margin="24,20,24,12" Background="White" BorderBrush="#DCE4EE">
+<TabItem Header="Connexion"><ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel Margin="30" MaxWidth="760" HorizontalAlignment="Left">
+<TextBlock Text="Connecter un environnement" FontSize="25" FontWeight="SemiBold"/><TextBlock Text="Utilisez votre compte AD pour consulter les VDI et les images des pools." Foreground="#62758B" Margin="0,8,0,24" TextWrapping="Wrap"/>
+<TextBlock Text="Environnement"/><ComboBox x:Name="Environment" DisplayMemberPath="Name" Padding="10,8" Margin="0,6,12,20"/>
+<Grid x:Name="CredentialsPanel"><Grid.ColumnDefinitions><ColumnDefinition Width="380"/><ColumnDefinition Width="300"/></Grid.ColumnDefinitions>
+<StackPanel><StackPanel><TextBlock Text="Connection Server (FQDN)"/><TextBox x:Name="Server"/></StackPanel><StackPanel><TextBlock Text="Utilisateur (sans domaine)"/><TextBox x:Name="Username"/></StackPanel></StackPanel>
+<StackPanel Grid.Column="1"><StackPanel><TextBlock Text="Domaine AD"/><TextBox x:Name="Domain"/></StackPanel><TextBlock Text="Mot de passe"/><PasswordBox x:Name="Password"/></StackPanel></Grid>
+<StackPanel Orientation="Horizontal" Margin="0,10,0,20"><Button x:Name="Connect" Content="Se connecter" Style="{StaticResource Primary}"/><Button x:Name="Disconnect" Content="Se déconnecter" IsEnabled="False"/></StackPanel>
+<Border Background="#F0F5FA" Padding="18" CornerRadius="6"><TextBlock Text="Le mot de passe n’est pas enregistré. Les diagnostics restent accessibles sans connexion Horizon, avec votre compte Windows." TextWrapping="Wrap" Foreground="#536B83"/></Border>
+</StackPanel></ScrollViewer></TabItem>
+<TabItem Header="VDI"><Grid Margin="24"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+<StackPanel><TextBlock Text="Rechercher des VDI" FontSize="25" FontWeight="SemiBold"/><TextBlock Text="Saisissez un début de hostname. Sans filtre, tous les VDI accessibles sont affichés." Foreground="#62758B" Margin="0,8,0,20"/></StackPanel>
+<Grid Grid.Row="1"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="Hostname commence par"/><TextBox x:Name="MachineFilter"/></StackPanel><StackPanel Grid.Column="1"><StackPanel><TextBlock Text="Pool exact (facultatif)"/><TextBox x:Name="PoolFilter"/></StackPanel></StackPanel><Button Grid.Column="2" x:Name="Search" Content="Rechercher" Style="{StaticResource Primary}" IsEnabled="False" VerticalAlignment="Center"/></Grid>
+<Grid Grid.Row="2"><DataGrid x:Name="Machines" SelectionMode="Extended"><DataGrid.Columns><DataGridTextColumn Header="Hostname" Binding="{Binding Hostname}" Width="*"/><DataGridTextColumn Header="DNS" Binding="{Binding DNS}" Width="1.5*"/><DataGridTextColumn Header="Pool" Binding="{Binding Pool}" Width="*"/><DataGridTextColumn Header="État" Binding="{Binding State}" Width="*"/><DataGridTextColumn Header="Utilisateur affecté" Binding="{Binding AssignedUser}" Width="1.3*"/></DataGrid.Columns></DataGrid><TextBlock x:Name="MachineEmpty" Text="Connectez-vous à Horizon, puis lancez une recherche." IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#62758B"/></Grid>
+<StackPanel Grid.Row="3" Margin="0,14,0,0"><DockPanel><Button x:Name="DiagnoseSelected" Content="Diagnostiquer le VDI sélectionné →" DockPanel.Dock="Right" IsEnabled="False"/><Button x:Name="ExportInventory" Content="Exporter tous les VDI (CSV)" DockPanel.Dock="Right" IsEnabled="False"/><TextBlock x:Name="MachineCount" Text="Aucun inventaire chargé" VerticalAlignment="Center"/></DockPanel><TextBox x:Name="ExportResult" IsReadOnly="True" Text="Export CSV : tous les VDI présents, tous pools et tous états." TextWrapping="Wrap" Margin="0,10,0,0"/></StackPanel>
+</Grid></TabItem>
+<TabItem Header="Gold images"><Grid Margin="24"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+<StackPanel><TextBlock Text="Images associées aux pools" FontSize="25" FontWeight="SemiBold"/><TextBlock Text="Configuration déclarée dans Horizon, avec les images en attente de déploiement. Lecture seule." Foreground="#62758B" Margin="0,8,0,20"/></StackPanel>
+<DockPanel Grid.Row="1" Margin="0,0,0,18"><Button x:Name="LoadImages" Content="Charger tous les pools" Style="{StaticResource Primary}" IsEnabled="False" DockPanel.Dock="Right"/><TextBlock x:Name="ImageCount" Text="Aucun pool chargé" VerticalAlignment="Center"/></DockPanel>
+<Grid Grid.Row="2"><DataGrid x:Name="PoolImages" SelectionMode="Single"><DataGrid.Columns><DataGridTextColumn Header="Pool" Binding="{Binding Pool}" Width="170"/><DataGridTextColumn Header="État de lecture" Binding="{Binding Status}" Width="180"/><DataGridTextColumn Header="Gold image / template" Binding="{Binding Image}" Width="280"/><DataGridTextColumn Header="Snapshot configuré" Binding="{Binding Snapshot}" Width="240"/><DataGridTextColumn Header="Source" Binding="{Binding ImageKind}" Width="120"/><DataGridTextColumn Header="Type de pool" Binding="{Binding PoolType}" Width="120"/><DataGridTextColumn Header="Image en attente" Binding="{Binding PendingImage}" Width="240"/><DataGridTextColumn Header="Snapshot en attente" Binding="{Binding PendingSnapshot}" Width="240"/><DataGridTextColumn Header="État du déploiement" Binding="{Binding PendingState}" Width="170"/><DataGridTextColumn Header="Ferme RDS" Binding="{Binding Farm}" Width="180"/><DataGridTextColumn Header="Provisioning" Binding="{Binding Provisioning}" Width="160"/><DataGridTextColumn Header="Image Management : stream" Binding="{Binding ImageStream}" Width="220"/><DataGridTextColumn Header="Tag" Binding="{Binding ImageTag}" Width="140"/><DataGridTextColumn Header="Stream en attente" Binding="{Binding PendingStream}" Width="200"/><DataGridTextColumn Header="Tag en attente" Binding="{Binding PendingTag}" Width="140"/><DataGridTextColumn Header="Erreur" Binding="{Binding Error}" Width="350"/></DataGrid.Columns></DataGrid><TextBlock x:Name="ImageEmpty" Text="Connectez-vous, puis chargez les pools de cet environnement." IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#62758B"/></Grid>
+<TextBlock Grid.Row="3" Text="Une ligne par pool accessible • Pools manuels inclus • Défilement horizontal pour les détails • Ctrl+C pour copier" Foreground="#62758B" Margin="0,14,0,0"/>
+</Grid></TabItem>
+<TabItem Header="Diagnostics"><ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel Margin="30" MaxWidth="850" HorizontalAlignment="Left">
+<TextBlock Text="Collecter un dossier de diagnostic" FontSize="25" FontWeight="SemiBold"/><TextBlock Text="Rassemblez les informations utiles dans une archive ZIP, sans ouvrir de session sur le VDI." Foreground="#62758B" Margin="0,8,0,24" TextWrapping="Wrap"/>
+<TextBlock Text="1. Choisir la machine" FontWeight="SemiBold" FontSize="17"/><TextBox x:Name="DiagnosticHost" ToolTip="Hostname ou FQDN du VDI" MinWidth="600"/>
+<TextBlock Text="2. Choisir les informations à récupérer" FontWeight="SemiBold" FontSize="17" Margin="0,10,0,18"/>
+<StackPanel x:Name="DiagnosticOptions">
+<CheckBox x:Name="DiagSystem" Content="Système — OS, mémoire, disques et services" IsChecked="True"/><CheckBox x:Name="DiagNetwork" Content="Réseau — adresses IP, DNS et routes" IsChecked="True"/><CheckBox x:Name="DiagEvents" Content="Journaux Windows — System, Application et GPO" IsChecked="True"/><CheckBox x:Name="DiagGroupPolicy" Content="GPO machine — rapport HTML gpresult"/><CheckBox x:Name="DiagAgentLogs" Content="Logs agents — dossiers définis dans la configuration"/>
+</StackPanel><Button x:Name="Collect" Content="3. Créer l’archive ZIP" Style="{StaticResource Primary}" HorizontalAlignment="Left" Margin="0,10,0,20"/>
+<TextBlock Text="Résultat de la collecte" FontWeight="SemiBold"/><TextBox x:Name="DiagnosticResult" IsReadOnly="True" TextWrapping="Wrap" MinHeight="70" MaxHeight="150" VerticalScrollBarVisibility="Auto" Text="Le chemin de l’archive apparaîtra ici. Destination : dossier Exports du projet."/>
+<TextBlock Text="Compte utilisé : votre session Windows • WinRM requis • Connexion Horizon facultative" Foreground="#62758B" TextWrapping="Wrap"/>
+</StackPanel></ScrollViewer></TabItem>
+<TabItem Header="Pools"><Grid Margin="24"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+<StackPanel><TextBlock Text="Vue des pools" FontSize="25" FontWeight="SemiBold"/><TextBlock Text="Tous les VDI présents, leur image et les dernières traces de connexion accessibles." Foreground="#62758B" Margin="0,8,0,20"/></StackPanel>
+<DockPanel Grid.Row="1"><Button x:Name="SearchPools" Content="Rechercher les pools" Style="{StaticResource Primary}" DockPanel.Dock="Right" IsEnabled="False" VerticalAlignment="Center"/><StackPanel><TextBlock Text="Nom du pool commence par (facultatif)"/><TextBox x:Name="PoolPrefix" ToolTip="Sans filtre : tous les pools accessibles."/></StackPanel></DockPanel>
+<Grid Grid.Row="2"><DataGrid x:Name="Pools" SelectionMode="Single"><DataGrid.Columns><DataGridTextColumn Header="Pool" Binding="{Binding Pool}" Width="180"/><DataGridTextColumn Header="VDI présents" Binding="{Binding VdiCount}" Width="110"/><DataGridTextColumn Header="Dernière connexion retrouvée" Binding="{Binding LastUse}" Width="210"/><DataGridTextColumn Header="Utilisateur" Binding="{Binding LastUser}" Width="190"/><DataGridTextColumn Header="Source de la date" Binding="{Binding UsageSource}" Width="280"/><DataGridTextColumn Header="Dernier client observable" Binding="{Binding ClientName}" Width="200"/><DataGridTextColumn Header="Début de sa session" Binding="{Binding ClientDate}" Width="200"/><DataGridTextColumn Header="Source client" Binding="{Binding ClientSource}" Width="250"/><DataGridTextColumn Header="Gold image" Binding="{Binding Image}" Width="300"/><DataGridTextColumn Header="Snapshot" Binding="{Binding Snapshot}" Width="240"/><DataGridTextColumn Header="Affectation" Binding="{Binding Assignment}" Width="130"/><DataGridTextColumn Header="Pool activé" Binding="{Binding Enabled}" Width="100"/><DataGridTextColumn Header="Type" Binding="{Binding PoolType}" Width="100"/><DataGridTextColumn Header="Détails / limites" Binding="{Binding Notes}" Width="400"/></DataGrid.Columns></DataGrid><TextBlock x:Name="PoolsEmpty" Text="Connectez-vous, puis recherchez un pool." IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#62758B"/></Grid>
+<StackPanel Grid.Row="3" Margin="0,14,0,0"><TextBlock x:Name="PoolsCount" Text="Aucun pool chargé"/><TextBlock Text="Client déclaré par Horizon : peut être absent ou virtuel. Historique limité aux événements accessibles ; client issu des sessions encore présentes." TextWrapping="Wrap" Foreground="#62758B" Margin="0,6,0,0"/></StackPanel>
+</Grid></TabItem>
+</TabControl>
+<Border Grid.Row="2" Background="#E6EDF5" Padding="24,12"><StackPanel><ProgressBar x:Name="Progress" Height="3" IsIndeterminate="True" Visibility="Collapsed" Margin="0,0,0,8"/><TextBlock x:Name="Status" Text="Bienvenue. Connectez un environnement ou ouvrez les diagnostics." TextWrapping="Wrap"/></StackPanel></Border>
+</Grid></Window>
+

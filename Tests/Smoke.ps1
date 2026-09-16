@@ -58,4 +58,8 @@ try {
 } finally { Remove-Module HorizonProvider }
 & (Join-Path $root 'App.ps1') -ValidateOnly
 & (Join-Path $PSScriptRoot 'Diagnostics.ps1')
+& (Join-Path $PSScriptRoot 'PoolImages.ps1')
+& (Join-Path $PSScriptRoot 'Pools.ps1')
 Write-Output 'Syntaxe, dépendances, garde de connexion, schéma SDK, filtres, projection et WPF : OK'
+
+
