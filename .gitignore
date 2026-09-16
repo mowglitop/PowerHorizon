@@ -1,0 +1,5 @@
+Logs/
+Exports/
+Config/environments.local.json
+Config/diagnostics.local.json
+*.zip

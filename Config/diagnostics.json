@@ -1,0 +1,6 @@
+{
+  "EventDays": 3,
+  "MaxFileMB": 100,
+  "MaxTotalMB": 500,
+  "LogDirectories": []
+}
