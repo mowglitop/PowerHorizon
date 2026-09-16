@@ -20,11 +20,12 @@ function Get-PHLatestPoolEvent {
     $query.Filter = $and
     $query.SortBy = 'time'
     $query.SortDescending = $true
-    $query.SortDescendingSpecified = $true
     $query.Limit = 1
-    $query.LimitSpecified = $true
     $query.MaxPageSize = 1
-    $query.MaxPageSizeSpecified = $true
+    # Optional-value flags are not exposed by every Horizon SDK version.
+    foreach ($flag in 'SortDescendingSpecified', 'LimitSpecified', 'MaxPageSizeSpecified') {
+        if ($null -ne $query.PSObject.Properties[$flag]) { $query.$flag = $true }
+    }
     $service = New-Object Omnissa.Horizon.QueryServiceService
     $page = $null
     try {
@@ -82,6 +83,21 @@ function Get-PHPoolOverview {
         try {
             $event = Get-PHLatestPoolEvent -PoolId $summary.Id
             if ($event) {
+                # Match the historical session before displaying its client.
+                $client = ''
+                $clientDate = $null
+                $clientSource = 'Session historique non disponible'
+                $eventSessionId = Get-PHValue $event 'sessionId.id'
+                if ($eventSessionId) {
+                    $eventSession = $sessions | Where-Object {
+                        (Get-PHValue $_ 'id.id') -eq $eventSessionId -and
+                        (Get-PHValue $_ 'referenceData.desktop.id') -eq $poolId
+                    } | Select-Object -First 1
+                    if ($eventSession) {
+                        $client = [string](Get-PHValue $eventSession 'namesData.clientName')
+                        $clientSource = 'Session de la dernière connexion retrouvée'
+                    }
+                }
                 $lastUse = $event.Time
                 $lastUser = $event.UserDisplayName
                 $source = 'Événements Horizon : ' + $event.EventType
@@ -98,6 +114,7 @@ function Get-PHPoolOverview {
             $lastUser = $latest.NamesData.UserName
             $source += ' ; début de session encore présente'
         }
+        if ($source -notlike 'Événements Horizon :*') { $notes.Add($source) }
         if ($sessionError) { $notes.Add('Client : ' + $sessionError) }
         $count = @($machines | Where-Object { (Get-PHValue $_ 'base.desktop.id') -eq $poolId }).Count
         [pscustomobject]@{

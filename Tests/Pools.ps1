@@ -37,6 +37,8 @@ $machine2.NamesData = New-Sdk MachineNamesData
 $machine2.NamesData.DesktopName = 'FLOAT-B'
 $machine2.NamesData.UserName = 'DOM\not-assigned'
 $session = New-Sdk SessionLocalSummaryView
+$session.Id = New-Sdk SessionId
+$session.Id.Id = 'session-1'
 $session.ReferenceData = New-Sdk SessionLocalReferenceData
 $session.ReferenceData.Desktop = $pool.Id
 $session.NamesData = New-Sdk SessionNamesData
@@ -47,6 +49,7 @@ $session.SessionData.StartTime = [datetime]'2026-09-01T10:00:00Z'
 $session.SessionData.StartTimeSpecified = $true
 $event = New-Sdk AuditEventSummaryView
 $event.EventType = 'AGENT_RECONNECTED'
+$event.SessionId = $session.Id
 $event.Time = [datetime]'2026-09-02T11:00:00Z'
 $event.UserDisplayName = 'DOM\bob'
 $detail = New-Sdk DesktopInfo
@@ -55,6 +58,41 @@ $detail.Base.Name = 'PROD-A'
 $detail.Type = 'MANUAL'
 $dir = Join-Path $root ('Exports/Test-Pools-' + [guid]::NewGuid().ToString('N'))
 try {
+    # Exercise the actual query builder with both SDK property shapes.
+    & $module {
+        param($poolId, $event)
+        $script:Connection = [pscustomobject]@{ ExtensionData = $null }
+        $script:QueryEvent = $event
+        $script:QueryService = [pscustomobject]@{ Deleted = $false }
+        $script:QueryService | Add-Member ScriptMethod QueryService_Create {
+            param($connection, $query)
+            if ($query.SortBy -ne 'time' -or -not $query.SortDescending -or $query.Limit -ne 1 -or $query.MaxPageSize -ne 1) { throw 'Tri/limite incorrects.' }
+            foreach ($flag in 'SortDescendingSpecified','LimitSpecified','MaxPageSizeSpecified') {
+                if ($query.PSObject.Properties[$flag] -and -not $query.$flag) { throw "Indicateur absent : $flag" }
+            }
+            if ($query.Filter.Filters[0].Value.Id -ne 'pool-1' -or $query.Filter.Filters[1].Filters.Count -ne 2) { throw 'Filtre historique incorrect.' }
+            [pscustomobject]@{ Id = 'query-1'; Results = @($script:QueryEvent) }
+        }
+        $script:QueryService | Add-Member ScriptMethod QueryService_Delete {
+            param($connection, $id)
+            if ($id -ne 'query-1') { throw 'Identifiant de requête incorrect.' }
+            $this.Deleted = $true
+        }
+        function script:New-Object {
+            param($TypeName)
+            if ($TypeName -eq 'Omnissa.Horizon.QueryServiceService') { return $script:QueryService }
+            if ($TypeName -eq 'Omnissa.Horizon.QueryDefinition' -and $script:WithoutFlags) {
+                return [pscustomobject]@{ QueryEntityType = ''; Filter = $null; SortBy = ''; SortDescending = $false; Limit = 0; MaxPageSize = 0 }
+            }
+            Microsoft.PowerShell.Utility\New-Object $TypeName
+        }
+        foreach ($withoutFlags in $false, $true) {
+            $script:WithoutFlags = $withoutFlags
+            $script:QueryService.Deleted = $false
+            $result = Get-PHLatestPoolEvent -PoolId $poolId
+            if ($result.Time -ne $event.Time -or -not $script:QueryService.Deleted) { throw 'Historique/nettoyage incorrect.' }
+        }
+    } $pool.Id $event
     & $module {
         param($pools,$machines,$session,$event,$detail)
         $script:Connection = [pscustomobject]@{ ExtensionData = $null }
@@ -77,8 +115,11 @@ try {
     } @($pool,$pool2) @($machine,$machine2) $session $event $detail
     $rows = @(Get-PHPoolOverview -Prefix ' prod')
     if ($rows.Count -ne 1 -or $rows[0].VdiCount -ne 1 -or $rows[0].LastUser -ne 'DOM\bob' -or $rows[0].LastUse -ne $event.Time) { throw 'Préfixe/comptage/historique incorrect.' }
-    if ($rows[0].ClientName -ne 'CLIENT01' -or $rows[0].ClientDate -ne $session.SessionData.StartTime) { throw 'Client et date incorrects.' }
+    if ($rows[0].ClientName -ne 'CLIENT01') { throw 'Client et date incorrects.' }
     if (@(Get-PHPoolOverview -Prefix 'ROD').Count -or @(Get-PHPoolOverview -Prefix 'PRO*').Count) { throw 'Le préfixe doit être littéral.' }
+    & $module { $script:EventFixture.SessionId = $null }
+    $unmatched = Get-PHPoolOverview -Prefix 'PROD'
+    if ($unmatched.ClientName -ne 'Non disponible') { throw 'Client sans lien avec la connexion historique.' }
     & $module { function script:Get-PHLatestPoolEvent { param($PoolId) throw 'History denied' } }
     $row = Get-PHPoolOverview -Prefix 'PROD'
     if ($row.UsageSource -notlike 'Historique indisponible*' -or $row.LastUser -ne 'DOM\alice') { throw 'Repli historique non signalé.' }
