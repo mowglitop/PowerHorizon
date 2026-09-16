@@ -18,10 +18,12 @@ try {
     # transfer, ZIP creation, manifest and cleanup. No machine is contacted.
     $module = Get-Module RemoteVDI
     & $module {
+        $script:ExpectedCredential = $null
         function script:New-PSSessionOption { param($OpenTimeout) @{ OpenTimeout = $OpenTimeout } }
         function script:New-PSSession {
-            param($ComputerName, $Authentication, $SessionOption, $ErrorAction)
+            param($ComputerName, $Authentication, $SessionOption, $ErrorAction, $Credential)
             if ($ComputerName -ne 'fixture.invalid' -or $Authentication -ne 'Kerberos') { throw 'Unexpected transport arguments.' }
+            if ($script:ExpectedCredential -and $Credential -ne $script:ExpectedCredential) { throw 'Credential not forwarded to WinRM.' }
             [pscustomobject]@{ Fixture = $true }
         }
         function script:Invoke-Command {
@@ -44,6 +46,15 @@ try {
         if ($names -match '(old|large)\.log') { throw 'Filtrage taille/date incorrect.' }
     } finally { $zip.Dispose() }
     if (@(Get-ChildItem -LiteralPath (Join-Path $testRoot 'exports') -Directory).Count) { throw 'Staging non nettoyé.' }
+    $credential = [pscredential]::new('DOM\fixture', (ConvertTo-SecureString 'Synthetic-test-only' -AsPlainText -Force))
+    & $module { param($value) $script:ExpectedCredential = $value } $credential
+    $null = Export-PHDiagnostics -ComputerName 'fixture.invalid' -Categories AgentLogs -SettingsPath $settingsPath -Destination (Join-Path $testRoot 'credential-exports') -Credential $credential
+    $demSettings = Join-Path $testRoot 'dem.json'
+    @{ EventDays = 3; MaxFileMB = 1; MaxTotalMB = 2; LogDirectories = @(); DEMLogDirectories = @($source) } |
+        ConvertTo-Json | Set-Content $demSettings
+    if ((Get-PHDiagnosticSettings $demSettings).LogDirectories -notcontains $source) { throw 'DEM paths ignored.' }
+    $defaults = Get-PHDiagnosticSettings (Join-Path $root 'Config/diagnostics.json')
+    if ($defaults.LogDirectories.Count -lt 4) { throw 'Default agent paths missing.' }
     $invalidPath = Join-Path $testRoot 'invalid.json'
     @{ EventDays = 0; MaxFileMB = 1; MaxTotalMB = 2; LogDirectories = @() } | ConvertTo-Json | Set-Content $invalidPath
     $rejected = $false
@@ -51,8 +62,9 @@ try {
     if (-not $rejected) { throw 'Configuration invalide acceptée.' }
     # A transport failure must never be reported as a successful archive.
     & $module {
+        $script:ExpectedCredential = $null
         function script:New-PSSession {
-            param($ComputerName, $Authentication, $SessionOption, $ErrorAction)
+            param($ComputerName, $Authentication, $SessionOption, $ErrorAction, $Credential)
             throw 'Fixture: WinRM unavailable'
         }
     }

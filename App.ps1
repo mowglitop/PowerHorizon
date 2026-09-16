@@ -10,7 +10,7 @@ Import-Module (Join-Path $PSScriptRoot 'Modules/Common/Common.psm1') -Force
 $reader = [System.Xml.XmlReader]::Create((Join-Path $PSScriptRoot 'UI/MainWindow.xaml'))
 try { $script:Window = [Windows.Markup.XamlReader]::Load($reader) } finally { $reader.Dispose() }
 $script:Controls = @{}
-foreach ($name in @('Environment', 'CredentialsPanel', 'Server', 'Domain', 'Username', 'Password', 'Connect', 'Disconnect', 'Identity', 'MachineFilter', 'PoolFilter', 'Search', 'Machines', 'Progress', 'Status', 'Collect', 'DiagnosticHost', 'DiagnosticOptions', 'DiagnosticResult', 'DiagSystem', 'DiagNetwork', 'DiagEvents', 'DiagGroupPolicy', 'DiagAgentLogs', 'Workspace', 'LoadImages', 'PoolImages', 'ImageCount', 'ImageEmpty', 'MachineCount', 'MachineEmpty', 'DiagnoseSelected', 'PoolPrefix', 'SearchPools', 'Pools', 'PoolsEmpty', 'PoolsCount', 'ExportInventory', 'ExportResult')) {
+foreach ($name in @('Environment', 'CredentialsPanel', 'Server', 'Domain', 'Username', 'Password', 'Connect', 'Disconnect', 'Identity', 'MachineFilter', 'PoolFilter', 'Search', 'Machines', 'Progress', 'Status', 'Collect', 'DiagnosticHost', 'DiagnosticIdentity', 'DiagnosticOptions', 'DiagnosticResult', 'DiagSystem', 'DiagNetwork', 'DiagEvents', 'DiagGroupPolicy', 'DiagAgentLogs', 'Workspace', 'LoadImages', 'PoolImages', 'ImageCount', 'ImageEmpty', 'MachineCount', 'MachineEmpty', 'DiagnoseSelected', 'PoolPrefix', 'SearchPools', 'Pools', 'PoolsEmpty', 'PoolsCount', 'ExportInventory', 'ExportResult')) {
     $script:Controls[$name] = $Window.FindName($name)
     if ($null -eq $Controls[$name]) { throw "Contrôle XAML absent : $name" }
 }
@@ -81,7 +81,17 @@ function Start-PHOperation([string]$Action, [hashtable]$Arguments) {
             'PoolImages' { Get-PHPoolImage }
             'Pools' { Get-PHPoolOverview @Arguments }
             'ExportInventory' { Export-PHInventory @Arguments }
-            'Diagnostics' { Export-PHDiagnostics @Arguments }
+            'Diagnostics' {
+                if (Get-Module HorizonProvider) {
+                    $diagnosticCredential = Get-PHDiagnosticCredential
+                    if ($diagnosticCredential) { $Arguments.Credential = $diagnosticCredential }
+                }
+                try { Export-PHDiagnostics @Arguments }
+                finally {
+                    $diagnosticCredential = $null
+                    $Arguments.Remove('Credential')
+                }
+            }
         }
     }).AddArgument($ProviderPath).AddArgument($Action).AddArgument($Arguments).AddArgument($RemotePath)
     try {
@@ -104,6 +114,7 @@ $Timer.Add_Tick({
         switch ($operation.Action) {
             'Connect' {
                 $script:Connected = $true
+                $Controls.DiagnosticIdentity.Text = 'Compte utilisé : {0}\{1} (connexion Horizon) • WinRM' -f $Controls.Domain.Text, $Controls.Username.Text
                 $Controls.Identity.Text = '{0}\{1} — {2}' -f $Controls.Domain.Text, $Controls.Username.Text, $Controls.Server.Text
                 $Controls.Workspace.SelectedIndex = 1
                 $Controls.MachineEmpty.Text = 'Saisissez un préfixe ou lancez une recherche sans filtre.'
@@ -112,6 +123,7 @@ $Timer.Add_Tick({
             }
             'Disconnect' {
                 $script:Connected = $false
+                $Controls.DiagnosticIdentity.Text = 'Compte utilisé : votre session Windows • WinRM • Horizon non connecté'
                 $Controls.Identity.Text = 'Non connecté'
                 $Controls.Machines.ItemsSource = @()
                 $Controls.PoolImages.ItemsSource = @()

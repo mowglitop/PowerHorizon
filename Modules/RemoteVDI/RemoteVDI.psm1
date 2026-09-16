@@ -1,4 +1,5 @@
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot 'DEM.ps1')
 
 function Get-PHDiagnosticSettings {
     [CmdletBinding()]
@@ -11,6 +12,15 @@ function Get-PHDiagnosticSettings {
     if ($settings.EventDays -gt 30) { throw 'La période maximale est de 30 jours.' }
     if ($settings.MaxFileMB -gt $settings.MaxTotalMB) { throw 'MaxFileMB doit être inférieur ou égal à MaxTotalMB.' }
     if ($settings.LogDirectories -isnot [array]) { throw 'LogDirectories doit être un tableau.' }
+    if ($settings.PSObject.Properties['DEMLogDirectories']) {
+        if ($settings.DEMLogDirectories -isnot [array]) { throw 'DEMLogDirectories doit être un tableau.' }
+        foreach ($directory in $settings.DEMLogDirectories) {
+            if ($directory -isnot [string] -or [string]::IsNullOrWhiteSpace($directory)) { throw 'Chemin DEM invalide.' }
+        }
+        # Preserve existing fixed local DEM directories.
+        $settings.LogDirectories = @($settings.LogDirectories) + @($settings.DEMLogDirectories | Where-Object { $_ -notlike '\\*' -and $_ -notmatch '(?i)%username%' })
+        $settings.DEMLogDirectories = @($settings.DEMLogDirectories | Where-Object { $_ -like '\\*' -or $_ -match '(?i)%username%' })
+    }
     foreach ($directory in $settings.LogDirectories) {
         if ($directory -isnot [string] -or [string]::IsNullOrWhiteSpace($directory)) { throw 'Dossier de logs invalide.' }
     }
@@ -52,6 +62,11 @@ function Export-PHDiagnostics {
         )
         Copy-Item -LiteralPath $remoteRoot -Destination $staging -FromSession $session -Recurse -ErrorAction Stop
         $manifest = Get-Content -LiteralPath (Join-Path $staging 'manifest.json') -Raw | ConvertFrom-Json
+        if ('AgentLogs' -in $Categories -and $settings.PSObject.Properties['DEMLogDirectories'] -and $settings.DEMLogDirectories.Count) {
+            $demResults = @(Copy-PHDEMLogs -Session $session -Templates $settings.DEMLogDirectories -Settings $settings -Staging $staging -Credential $Credential)
+            $manifest.Results = @($manifest.Results) + $demResults
+            $manifest | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $staging 'manifest.json') -Encoding UTF8
+        }
         # ZipFile also includes hidden files, unlike Compress-Archive.
         [IO.Compression.ZipFile]::CreateFromDirectory($staging, $archive)
         $issues = @($manifest.Results | Where-Object Status -NE 'Collected').Count

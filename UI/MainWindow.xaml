@@ -22,7 +22,7 @@
 <StackPanel><StackPanel><TextBlock Text="Connection Server (FQDN)"/><TextBox x:Name="Server"/></StackPanel><StackPanel><TextBlock Text="Utilisateur (sans domaine)"/><TextBox x:Name="Username"/></StackPanel></StackPanel>
 <StackPanel Grid.Column="1"><StackPanel><TextBlock Text="Domaine AD"/><TextBox x:Name="Domain"/></StackPanel><TextBlock Text="Mot de passe"/><PasswordBox x:Name="Password"/></StackPanel></Grid>
 <StackPanel Orientation="Horizontal" Margin="0,10,0,20"><Button x:Name="Connect" Content="Se connecter" Style="{StaticResource Primary}"/><Button x:Name="Disconnect" Content="Se déconnecter" IsEnabled="False"/></StackPanel>
-<Border Background="#F0F5FA" Padding="18" CornerRadius="6"><TextBlock Text="Le mot de passe n’est pas enregistré. Les diagnostics restent accessibles sans connexion Horizon, avec votre compte Windows." TextWrapping="Wrap" Foreground="#536B83"/></Border>
+<Border Background="#F0F5FA" Padding="18" CornerRadius="6"><TextBlock Text="Le mot de passe reste uniquement en mémoire pendant la connexion. Les diagnostics utilisent le compte Horizon connecté, sinon votre compte Windows." TextWrapping="Wrap" Foreground="#536B83"/></Border>
 </StackPanel></ScrollViewer></TabItem>
 <TabItem Header="VDI"><Grid Margin="24"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
 <StackPanel><TextBlock Text="Rechercher des VDI" FontSize="25" FontWeight="SemiBold"/><TextBlock Text="Saisissez un début de hostname. Sans filtre, tous les VDI accessibles sont affichés." Foreground="#62758B" Margin="0,8,0,20"/></StackPanel>
@@ -44,7 +44,7 @@
 <CheckBox x:Name="DiagSystem" Content="Système — OS, mémoire, disques et services" IsChecked="True"/><CheckBox x:Name="DiagNetwork" Content="Réseau — adresses IP, DNS et routes" IsChecked="True"/><CheckBox x:Name="DiagEvents" Content="Journaux Windows — System, Application et GPO" IsChecked="True"/><CheckBox x:Name="DiagGroupPolicy" Content="GPO machine — rapport HTML gpresult"/><CheckBox x:Name="DiagAgentLogs" Content="Logs agents — dossiers définis dans la configuration"/>
 </StackPanel><Button x:Name="Collect" Content="3. Créer l’archive ZIP" Style="{StaticResource Primary}" HorizontalAlignment="Left" Margin="0,10,0,20"/>
 <TextBlock Text="Résultat de la collecte" FontWeight="SemiBold"/><TextBox x:Name="DiagnosticResult" IsReadOnly="True" TextWrapping="Wrap" MinHeight="70" MaxHeight="150" VerticalScrollBarVisibility="Auto" Text="Le chemin de l’archive apparaîtra ici. Destination : dossier Exports du projet."/>
-<TextBlock Text="Compte utilisé : votre session Windows • WinRM requis • Connexion Horizon facultative" Foreground="#62758B" TextWrapping="Wrap"/>
+<TextBlock x:Name="DiagnosticIdentity" Text="Compte utilisé : votre session Windows • WinRM • Horizon non connecté" Foreground="#62758B" TextWrapping="Wrap"/>
 </StackPanel></ScrollViewer></TabItem>
 <TabItem Header="Pools"><Grid Margin="24"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
 <StackPanel><TextBlock Text="Vue des pools" FontSize="25" FontWeight="SemiBold"/><TextBlock Text="Tous les VDI présents, leur image et les dernières traces de connexion accessibles." Foreground="#62758B" Margin="0,8,0,20"/></StackPanel>

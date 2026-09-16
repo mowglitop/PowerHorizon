@@ -36,7 +36,7 @@ Cette version couvre la connexion, l’inventaire et la collecte ZIP par hostnam
 
 Ouvrir l'onglet **Diagnostics**, saisir un hostname/FQDN (ou sélectionner une ligne de l’inventaire), choisir les catégories et cliquer sur **Collecter en ZIP**. Le chemin de l’archive est affiché et copiable ; les archives sont enregistrées dans `Exports/`.
 
-La collecte fonctionne indépendamment de Horizon : elle ne vérifie pas que la cible appartient à un pool. Elle utilise WinRM/Kerberos avec le compte Windows exécutant PowerHorizon, qui peut être différent du compte saisi pour Horizon. Le poste doit pouvoir joindre le domaine et le VDI, et le compte doit disposer des droits de remoting et de lecture des diagnostics. L’endpoint distant Windows PowerShell 5.1 suffit. Aucun ping préalable ne bloque une machine qui filtre ICMP. Aucun changement de WinRM, de pare-feu ou de TrustedHosts n’est effectué.
+La collecte fonctionne indépendamment de Horizon : elle ne vérifie pas que la cible appartient à un pool. Elle utilise WinRM/Kerberos avec le compte AD de la connexion Horizon active (domaine et utilisateur). Sans connexion Horizon, elle utilise le compte Windows exécutant PowerHorizon. Les identifiants restent en mémoire jusqu’à la déconnexion et ne sont pas enregistrés. Les logs locaux des agents sont transférés par Copy-Item -FromSession. Les logs DEM sur partage sont lus directement depuis PowerHorizon par SMB avec le même compte de diagnostic, sans délégation via le VDI. Le compte utilisé est affiché dans Diagnostics. Aucun repli vers un autre compte ne se produit si WinRM refuse les identifiants Horizon. Le poste doit pouvoir joindre le domaine et le VDI, et le compte doit disposer des droits de remoting et de lecture des diagnostics. L’endpoint distant Windows PowerShell 5.1 suffit. Aucun ping préalable ne bloque une machine qui filtre ICMP. Aucun changement de WinRM, de pare-feu ou de TrustedHosts n’est effectué.
 
 Catégories disponibles :
 
@@ -46,18 +46,27 @@ Catégories disponibles :
 - GPO machine : rapport HTML `gpresult /SCOPE COMPUTER`, sans rapport de la session utilisateur.
 - Logs agents : copie des fichiers récemment modifiés dans les dossiers configurés. Les sous-dossiers sont parcourus, les liens sont ignorés et les fichiers verrouillés sont signalés.
 
-Copier `Config/diagnostics.json` vers `Config/diagnostics.local.json` pour régler la période (1–30 jours), les limites de copie et les dossiers de logs locaux du VDI. Aucun chemin propre à Horizon Agent, DEM, App Volumes, BeyondTrust ou Trend Micro n’est supposé : ajouter les chemins réellement utilisés par les gold images, par exemple :
+Copier `Config/diagnostics.json` vers `Config/diagnostics.local.json` pour régler la période (1–30 jours), les limites de copie et les dossiers de logs locaux du VDI. Les emplacements Horizon Agent (Omnissa et VMware) et App Volumes (Omnissa et CloudVolumes) sont préremplis. Versions du déploiement : Horizon Agent 2506 / 8.16, App Volumes 2506 / 4.18-3124 et DEM 10.16.0.2292. Un fichier local existant remplace entièrement la configuration par défaut : y reporter ces chemins si nécessaire. Adapter les chemins aux gold images, par exemple :
 
 ```json
 {
   "EventDays": 3,
   "MaxFileMB": 100,
   "MaxTotalMB": 500,
-  "LogDirectories": ["C:\\MonAgent\\Logs", "%ProgramData%\\MonAutreAgent\\Logs"]
+  "LogDirectories": ["%ProgramData%\\Omnissa\\Horizon\\logs", "%ProgramFiles%\\Omnissa\\AppVolumes\\Agent\\Logs"],
+  "DEMLogDirectories": []
 }
 ```
 
-Les limites de taille concernent les fichiers des agents, pas les exports EVTX. La période des fichiers se base sur leur dernière modification, sans filtrer leur contenu. Les dossiers UNC et les jokers sont refusés. Un `manifest.json` dans le ZIP détaille les succès, absences et erreurs ; une collecte partielle produit aussi une archive, même si aucune catégorie ne réussit. Les fichiers collectés peuvent contenir des données utilisateurs et restent tels quels dans le ZIP.
+DEM : DEMLogDirectories accepte les chemins UNC vers un fichier (par exemple FlexEngine.log) ou un dossier. Lors de la collecte AgentLogs, PowerHorizon interroge les sessions Windows actives du VDI par WinRM (API WTS), puis remplace %USERNAME% sans distinction de casse par le nom de chaque utilisateur connecté, sans son domaine. Le compte administrateur WinRM ne sert jamais de valeur de remplacement. La configuration reste inchangée ; la résolution est refaite à chaque collecte. Les autres variables dans les chemins UNC sont refusées.
+
+Chaque utilisateur actif est traité séparément dans DEM-1, DEM-2, etc. Le manifeste associe le compte, la session observée, le chemin résolu et le dossier du ZIP. Les sessions déconnectées sont exclues. Sans session active, les logs DEM sont ignorés avec une explication. Un échec de détection, un accès refusé ou un fichier absent est signalé sans empêcher les autres diagnostics. La session peut évoluer après cet instantané ; le fichier DEM partagé peut contenir des traces de plusieurs VDI pour le même utilisateur.
+
+Le partage est lu depuis le poste PowerHorizon au moyen de lecteurs PowerShell temporaires, avec le compte Horizon connecté ou le compte Windows courant sans connexion Horizon. Ces lecteurs sont retirés après lecture. Les limites de taille et de période des agents sont également appliquées à DEM, avec un budget total partagé. Le poste PowerHorizon doit donc pouvoir accéder au partage SMB. Les dossiers DEM locaux fixes restent pris en charge ; les modèles %USERNAME% nécessitent un chemin UNC. Références : [sessions Windows](https://learn.microsoft.com/en-us/windows/win32/api/wtsapi32/nf-wtsapi32-wtsquerysessioninformationa), [lecteurs SMB avec identifiants](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.management/new-psdrive).
+
+Sources des chemins : [Horizon, changement de marque](https://techzone.omnissa.com/api/checkuseraccess?referer=%2Fsites%2Fdefault%2Ffiles%2Fassociated-content-noindex%2FPARTNER_COMMUNICATION-_REBRANDING_CHANGES_-_HORIZON_PRODUCTS_-FINALNov2024.pdf), [App Volumes](https://docs.omnissa.com/AppVolumesAdminGuide-V2512/TroubleshootingAppVolumes), [configuration DEM](https://techzone.omnissa.com/resource/dynamic-environment-manager-configuration).
+
+Les limites de taille concernent les fichiers des agents, pas les exports EVTX. La période des fichiers se base sur leur dernière modification, sans filtrer leur contenu. Dans LogDirectories, les dossiers UNC et les jokers sont refusés ; les chemins UNC DEM doivent être placés dans DEMLogDirectories. Un `manifest.json` dans le ZIP détaille les succès, absences et erreurs ; une collecte partielle produit aussi une archive, même si aucune catégorie ne réussit. Les fichiers collectés peuvent contenir des données utilisateurs et restent tels quels dans le ZIP.
 
 Le dossier temporaire distant est nettoyé en fin de traitement. En cas d’échec du transfert ou de compression, le dossier local `.partial` peut rester disponible pour diagnostic. Les appels distants n’ont pas encore d’annulation ni de durée maximale globale ; le délai d’ouverture WinRM est de 15 secondes. La fermeture de la fenêtre attend la fin de la collecte.
 

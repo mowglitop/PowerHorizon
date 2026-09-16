@@ -2,5 +2,13 @@
   "EventDays": 3,
   "MaxFileMB": 100,
   "MaxTotalMB": 500,
-  "LogDirectories": []
+  "LogDirectories": [
+    "%ProgramData%\\Omnissa\\Horizon\\logs",
+    "%ProgramData%\\VMware\\VDM\\logs",
+    "%ProgramFiles%\\Omnissa\\AppVolumes\\Agent\\Logs",
+    "%ProgramFiles(x86)%\\CloudVolumes\\Agent\\Logs"
+  ],
+  "DEMLogDirectories": ["\\\\srvpvdidem01.matmut.fr\\UEMProfiles$\\%username%\\Logs\\FlexEngine.log"],
+  "DEMLogDirectoriesNote": "Chemins UNC vers un fichier ou dossier DEM. %USERNAME% est remplacé à la collecte par chaque utilisateur ayant une session Windows active sur le VDI. Lecture SMB depuis PowerHorizon avec le compte de diagnostic. Le modèle reste inchangé.",
+  "LogDirectoriesNote": "Emplacements Omnissa et historiques VMware. Adapter aux versions et aux chemins de vos gold images. Les dossiers absents sont signalés dans le manifeste."
 }

@@ -1,4 +1,5 @@
 Set-StrictMode -Version Latest
+$script:DiagnosticCredential = $null
 $script:Connection = $null
 
 function Connect-PHHorizon {
@@ -9,10 +10,18 @@ function Connect-PHHorizon {
         [Parameter(Mandatory)][pscredential]$Credential
     )
     if ($null -ne $script:Connection) { throw 'Déconnecte la session actuelle avant de changer de serveur.' }
+    $script:DiagnosticCredential = $null
     Import-Module Omnissa.VimAutomation.HorizonView -ErrorAction Stop
     Import-Module Omnissa.Horizon.Helper -DisableNameChecking -ErrorAction Stop
     $script:Connection = Connect-HVServer -Server $Server -Domain $Domain -Credential $Credential -NotDefault -ErrorAction Stop
     if ($null -eq $script:Connection) { throw 'Horizon nʼa retourné aucune connexion.' }
+    $remoteUser = $Credential.UserName
+    if (-not $remoteUser.Contains('@') -and -not $remoteUser.Contains('\')) { $remoteUser = '{0}\{1}' -f $Domain, $remoteUser }
+    $script:DiagnosticCredential = [pscredential]::new($remoteUser, $Credential.Password)
+}
+
+function Get-PHDiagnosticCredential {
+    if ($null -ne $script:Connection) { $script:DiagnosticCredential }
 }
 
 function Disconnect-PHHorizon {
@@ -21,6 +30,7 @@ function Disconnect-PHHorizon {
     if ($null -ne $script:Connection) {
         Disconnect-HVServer -Server $script:Connection -Confirm:$false -ErrorAction Stop
         $script:Connection = $null
+        $script:DiagnosticCredential = $null
     }
 }
 
@@ -116,7 +126,7 @@ function Get-PHPoolImage {
         }
     }
 }
-Export-ModuleMember -Function Connect-PHHorizon, Disconnect-PHHorizon, Get-PHMachine, Get-PHPoolImage
+Export-ModuleMember -Function Get-PHDiagnosticCredential, Connect-PHHorizon, Disconnect-PHHorizon, Get-PHMachine, Get-PHPoolImage
 
 
 . (Join-Path $PSScriptRoot 'Pools.ps1')
